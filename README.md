@@ -57,13 +57,13 @@ The Auto-Hunter Scan
 
 This command will:
 
-    - Craw https://example.com
+  - Craw https://example.com
 
-    - Find all hosted JavaScript files.
+  - Find all hosted JavaScript files.
 
-    - Scan each file for secrets and endpoints.
+  - Scan each file for secrets and endpoints.
 
-    - Generate an HTML report automatically.
+  - Generate an HTML report automatically.
 
 Arguments
 Argument	Description	Required
