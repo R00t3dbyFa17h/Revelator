@@ -3,14 +3,14 @@ import json
 import argparse
 import requests
 import sys
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, urljoin
 from datetime import datetime
 
 # -------------------------------------------------------------------------
 # Tool: Revelator
+# Version: 2.0 (The Auto-Hunter)
 # Author: R00t3dbyFa17h
-# Verse: "He reveals deep and hidden things..." (Daniel 2:22)
-# Description: Advanced JS Analysis, API Reconstruction, and Secret Hunting.
+# Verse: "Search me, God, and know my heart..." (Psalm 139:23)
 # -------------------------------------------------------------------------
 
 class Colors:
@@ -29,125 +29,159 @@ def banner():
   / /_/ / __/  | | / / __/ / /   / /| | / / / / / / /_/ /
  / _, _/ /___  | |/ / /___/ /___/ ___ |/ / / /_/ / _, _/ 
 /_/ |_/_____/  |___/_____/_____/_/  |_/_/  \____/_/ |_|  
-                                            v1.0
+                                            v2.0 (AUTO-HUNTER)
     """ + Colors.ENDC)
-    print(Colors.BOLD + " [*] Revealing the deep and hidden things (Daniel 2:22)..." + Colors.ENDC)
 
-def fetch_js(url):
+def get_js_links(url):
+    print(Colors.BLUE + f" [*] Crawling {url} for JavaScript files..." + Colors.ENDC)
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
+        response = requests.get(url, headers=headers, timeout=10)
+        
+        if response.status_code != 200:
+            print(Colors.FAIL + f" [!] Failed to connect to site: {response.status_code}" + Colors.ENDC)
+            return []
+
+        # Regex to find <script src="...">
+        script_pattern = r'<script[^>]+src=["\'](.*?)["\']'
+        links = re.findall(script_pattern, response.text)
+        
+        valid_js = []
+        for link in links:
+            # Handle relative URLs (e.g., /assets/main.js -> https://site.com/assets/main.js)
+            full_url = urljoin(url, link)
+            
+            # Filter: Must be a .js file, not a tracker, not google analytics
+            if ".js" in full_url and "google" not in full_url and "facebook" not in full_url:
+                valid_js.append(full_url)
+        
+        # Remove duplicates
+        return list(set(valid_js))
+
+    except Exception as e:
+        print(Colors.FAIL + f" [!] Crawler Error: {e}" + Colors.ENDC)
+        return []
+
+def fetch_js_content(url):
     try:
         headers = {'User-Agent': 'Mozilla/5.0 (Revelator-Scanner)'}
         response = requests.get(url, headers=headers, timeout=10)
-        if response.status_code == 200:
-            return response.text
-    except Exception as e:
-        print(Colors.FAIL + f" [!] Error fetching URL: {e}" + Colors.ENDC)
+        return response.text if response.status_code == 200 else None
+    except:
         return None
+
+def extract_endpoints(js_content):
+    endpoints = set()
+    # Floodlight Regex: Grab anything that looks like a path inside quotes
+    matches = re.findall(r"(['\"`])(.*?)\1", js_content)
+    for quote, content in matches:
+        if '/' in content and ' ' not in content and 4 < len(content) < 120:
+             if not content.endswith(('.png', '.svg', '.css', '.js', '.ico', '.html')):
+                if not content.startswith(('http', '//', 'www', '<', '>')):
+                     if content.startswith('/') or 'api' in content or 'v1' in content:
+                        endpoints.add(content)
+    return list(endpoints)
 
 def scan_secrets(content):
     signatures = {
-        "AWS Access Key": r"AKIA[0-9A-Z]{16}",
-        "Google API Key": r"AIza[0-9A-Za-z\\-_]{35}",
-        "Generic API Key": r"(api_key|access_token|secret_key)\s*[:=]\s*['\"]([a-zA-Z0-9_\-]{10,})['\"]",
-        "Authorization Bearer": r"Bearer\s[a-zA-Z0-9\-\._~+\/]+=*"
+        "AWS Key": r"AKIA[0-9A-Z]{16}",
+        "Google Key": r"AIza[0-9A-Za-z\\-_]{35}",
+        "Generic Token": r"(api_key|access_token)\s*[:=]\s*['\"`]([a-zA-Z0-9_\-]{10,})['\"`]"
     }
-    found_secrets = []
+    found = []
     for name, pattern in signatures.items():
-        matches = re.findall(pattern, content)
-        for match in matches:
-            secret_val = match if isinstance(match, str) else match[1]
-            found_secrets.append({"type": name, "value": secret_val})
-    return found_secrets
+        for match in re.findall(pattern, content):
+            val = match if isinstance(match, str) else match[1]
+            found.append({"type": name, "value": val})
+    return found
 
-def extract_endpoints(js_content):
-    pattern = r"(get|post|put|delete|patch)\(['\"]([^'\"]+)['\"]"
-    matches = re.findall(pattern, js_content, re.IGNORECASE)
-    return matches
-
-def generate_html_report(swagger, secrets, filename="revelator_report.html"):
+def generate_report(results, target_domain):
+    filename = "revelator_report.html"
+    
+    # Calculate totals
+    total_endpoints = sum(len(r['endpoints']) for r in results)
+    total_secrets = sum(len(r['secrets']) for r in results)
+    
     html = f"""
-    <html>
+    <!DOCTYPE html>
+    <html lang="en">
     <head>
-        <title>Revelator Scan Report</title>
+        <title>Revelator Scan: {target_domain}</title>
         <style>
-            body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f0f0f; color: #e0e0e0; padding: 40px; }}
-            h1 {{ color: #9b59b6; border-bottom: 2px solid #9b59b6; padding-bottom: 10px; }}
-            h2 {{ color: #3498db; margin-top: 30px; }}
-            .card {{ background: #1e1e1e; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 5px solid #2ecc71; }}
-            .secret {{ border-left: 5px solid #e74c3c; background: #2c0e0e; }}
-            .method {{ font-weight: bold; color: #fff; background: #3498db; padding: 3px 8px; border-radius: 3px; font-size: 0.9em; }}
-            .footer {{ margin-top: 50px; font-size: 0.8em; color: #777; }}
+            body {{ background: #0d1117; color: #c9d1d9; font-family: sans-serif; padding: 20px; }}
+            .header {{ border-bottom: 1px solid #30363d; padding-bottom: 20px; margin-bottom: 20px; }}
+            h1 {{ color: #58a6ff; }}
+            .file-block {{ background: #161b22; border: 1px solid #30363d; margin-bottom: 20px; border-radius: 6px; overflow: hidden; }}
+            .file-title {{ background: #21262d; padding: 10px; font-weight: bold; color: #f0f6fc; border-bottom: 1px solid #30363d; }}
+            .item {{ padding: 5px 15px; border-bottom: 1px solid #21262d; font-family: monospace; }}
+            .secret {{ color: #ff7b72; font-weight: bold; }}
+            .endpoint {{ color: #7ee787; }}
+            .badge {{ background: #1f6feb; color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; }}
         </style>
     </head>
     <body>
-        <h1>REVELATOR // Scan Report</h1>
-        <p><b>Target:</b> API Infrastructure Analysis</p>
-        <p><b>Date:</b> {datetime.now()}</p>
-        
-        <h2>[+] Secrets Detected ({len(secrets)})</h2>
-        {'<p>No hardcoded secrets found.</p>' if not secrets else ''}
-        {''.join([f'<div class="card secret"><b>{s["type"]}:</b> {s["value"]}</div>' for s in secrets])}
-
-        <h2>[+] API Map ({len(swagger['paths'])})</h2>
-        {''.join([f'<div class="card"><span class="method">{m.upper()}</span> {p}</div>' for p, m_dict in swagger['paths'].items() for m in m_dict])}
-        
-        <div class="footer">Generated by Revelator | R00t3dbyFa17h</div>
-    </body>
-    </html>
+        <div class="header">
+            <h1>REVELATOR REPORT</h1>
+            <h3>Target: {target_domain}</h3>
+            <p>Files Scanned: {len(results)} | Endpoints Found: {total_endpoints} | Secrets: {total_secrets}</p>
+        </div>
     """
+    
+    for res in results:
+        if not res['endpoints'] and not res['secrets']:
+            continue # Skip empty files to keep report clean
+            
+        html += f"""
+        <div class="file-block">
+            <div class="file-title">{res['url']}</div>
+            {''.join([f'<div class="item secret">[SECRET] {s["type"]}: {s["value"]}</div>' for s in res['secrets']])}
+            {''.join([f'<div class="item endpoint">[GET] {e}</div>' for e in res['endpoints']])}
+        </div>
+        """
+        
+    html += "</body></html>"
+    
     with open(filename, "w") as f:
         f.write(html)
-    print(Colors.GREEN + f" [+] HTML Report generated: {filename}" + Colors.ENDC)
+    print(Colors.GREEN + f" [+] Report Generated: {filename}" + Colors.ENDC)
 
 def main():
-    parser = argparse.ArgumentParser(description="Revelator: The JS Reconnaissance Framework")
-    req_group = parser.add_argument_group('Target Options')
-    req_group.add_argument("-u", "--url", help="Target JS File URL", required=True)
-    req_group.add_argument("-t", "--target", help="Base API URL (e.g., https://api.target.com)", required=True)
-    
-    opt_group = parser.add_argument_group('Output Options')
-    opt_group.add_argument("-o", "--output", help="JSON Output Filename", default="swagger.json")
-    opt_group.add_argument("--html", help="Generate HTML Report", action="store_true")
-    
+    parser = argparse.ArgumentParser()
+    # v2.0 ARGUMENT: Just the domain!
+    parser.add_argument("-d", "--domain", help="Target Domain (e.g., https://tesla.com)", required=True)
     args = parser.parse_args()
     banner()
 
-    print(Colors.BLUE + f" [+] Fetching JS from {args.url}..." + Colors.ENDC)
-    js_content = fetch_js(args.url)
+    target = args.domain if args.domain.startswith("http") else "https://" + args.domain
     
-    if js_content:
-        print(Colors.BLUE + " [+] Analyzing for API logic..." + Colors.ENDC)
-        matches = extract_endpoints(js_content)
-        
-        swagger_data = {
-            "openapi": "3.0.0", 
-            "info": {"title": "Revelator Scan", "version": "1.0"},
-            "paths": {}
-        }
-        
-        for method, raw_path in matches:
-            parsed = urlparse(raw_path)
-            clean_path = parsed.path
-            if clean_path not in swagger_data["paths"]:
-                swagger_data["paths"][clean_path] = {}
-            swagger_data["paths"][clean_path][method.lower()] = {"responses": {"200": {"desc": "OK"}}}
+    # 1. CRAWL
+    js_files = get_js_links(target)
+    
+    if not js_files:
+        print(Colors.FAIL + " [!] No JS files found. Try a different domain or check your connection." + Colors.ENDC)
+        sys.exit()
 
-        print(Colors.GREEN + f" [+] Identified {len(matches)} endpoints." + Colors.ENDC)
-
-        print(Colors.WARNING + " [+] Hunting for hidden secrets..." + Colors.ENDC)
-        secrets = scan_secrets(js_content)
-        if secrets:
-            print(Colors.FAIL + f" [!!!] FOUND {len(secrets)} POTENTIAL SECRETS!" + Colors.ENDC)
-            for s in secrets:
-                print(f"     - {s['type']}: {s['value'][:15]}...")
-        else:
-            print("     - No obvious secrets found.")
-
-        with open(args.output, "w") as f:
-            json.dump(swagger_data, f, indent=4)
-        print(Colors.GREEN + f" [+] Swagger JSON saved to: {args.output}" + Colors.ENDC)
-        
-        if args.html:
-            generate_html_report(swagger_data, secrets)
+    print(Colors.BLUE + f" [*] Found {len(js_files)} JS files. Beginning deep scan..." + Colors.ENDC)
+    
+    scan_results = []
+    
+    # 2. SCAN LOOP
+    for js_url in js_files:
+        print(f"   -> Scanning {js_url[:60]}...", end='\r')
+        content = fetch_js_content(js_url)
+        if content:
+            endpoints = extract_endpoints(content)
+            secrets = scan_secrets(content)
+            scan_results.append({
+                "url": js_url,
+                "endpoints": endpoints,
+                "secrets": secrets
+            })
+    
+    print("\n" + Colors.GREEN + " [!] Scan Complete." + Colors.ENDC)
+    
+    # 3. REPORT
+    generate_report(scan_results, target)
 
 if __name__ == "__main__":
     main()
