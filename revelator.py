@@ -9,7 +9,7 @@ from datetime import datetime
 # -------------------------------------------------------------------------
 # Tool: Revelator
 # Version: 2.0 (The Auto-Hunter)
-# Author: R00t3dbyFa17h
+# Author: R00t3dbyFa17h/NicholasMullenski
 # Verse: "Search me, God, and know my heart..." (Psalm 139:23)
 # -------------------------------------------------------------------------
 
