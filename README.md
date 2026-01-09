@@ -67,7 +67,7 @@ This command will:
 
 Arguments
 Argument	Description	Required
-`-d, --domain`	The target domain to crawl (e.g., tesla.com or https://globe.gov).	✅ Yes
+`-d, --domain`	The target domain to crawl (e.g., example.com or https://example.com).	✅ Yes
 📸 Output
 1. The Terminal Output
 
