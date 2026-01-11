@@ -42,11 +42,11 @@ Unlike standard link scrapers, Revelator **v2.0 (The Auto-Hunter)** automates th
 `git clone [https://github.com/R00t3dbyFa17h/Revelator.git](https://github.com/R00t3dbyFa17h/Revelator.git)
 cd Revelator`
 
-2. Install Dependencies
+### 2. Install Dependencies
 
 `pip install -r requirements.txt`
 
-(Note: Requires Python 3.x)
+**(Note: Requires Python 3.x)**
 ## 🚀 Usage
 
 **Revelator v2.0 is designed for speed. You only need one argument: the target domain.**
@@ -79,7 +79,7 @@ A dark-themed dashboard (revelator_report.html) listing all discovered "secrets"
 ## ⚠️ Disclaimer
 
 **This tool is for educational purposes and authorized testing only. Using this tool against systems you do not have permission to test is illegal.**
-## The author (R00t3dbyFa17h) is not responsible for any misuse.
+ - **The author (R00t3dbyFa17h) is not responsible for any misuse.**
 
-## Built with 💻 and ✝️ by R00t3dbyFa17h
+ **Built with 💻 and ✝️ by R00t3dbyFa17h**
 ## Rooted by Authority. Faith by Design. STAY R00t3d In Fa17h!!
