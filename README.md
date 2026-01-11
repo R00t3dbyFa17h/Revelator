@@ -47,15 +47,16 @@ cd Revelator`
 `pip install -r requirements.txt`
 
 (Note: Requires Python 3.x)
-🚀 Usage
+## 🚀 Usage
 
-Revelator v2.0 is designed for speed. You only need one argument: the target domain.
-The Auto-Hunter Scan
+**Revelator v2.0 is designed for speed. You only need one argument: the target domain.**
+
+## The Auto-Hunter Scan
 
 
 `python revelator.py -d example.com`
 
-This command will:
+**This command will:**
 
   - Craw https://example.com
 
@@ -65,18 +66,20 @@ This command will:
 
   - Generate an HTML report automatically.
 
-Arguments
+## Arguments
 Argument	Description	Required
 `-d, --domain`	The target domain to crawl (e.g., example.com or https://example.com).	✅ Yes
 📸 Output
-1. The Terminal Output
+**1. The Terminal Output**
 
 Revelator provides a clean, color-coded CLI output identifying endpoints and secrets in real-time as it crawls.
-2. The HTML Report
+**2. The HTML Report**
 
 A dark-themed dashboard (revelator_report.html) listing all discovered "secrets" and a complete map of the API methods found.
-⚠️ Disclaimer
+## ⚠️ Disclaimer
 
-This tool is for educational purposes and authorized testing only. Using this tool against systems you do not have permission to test is illegal. The author (R00t3dbyFa17h) is not responsible for any misuse.
+**This tool is for educational purposes and authorized testing only. Using this tool against systems you do not have permission to test is illegal.**
+## The author (R00t3dbyFa17h) is not responsible for any misuse.
 
-Built with 💻 and ✝️ by R00t3dbyFa17h
+## Built with 💻 and ✝️ by R00t3dbyFa17h
+## Rooted by Authority. Faith by Design. STAY R00t3d In Fa17h!!
