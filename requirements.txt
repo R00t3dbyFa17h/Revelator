@@ -1,2 +1,9 @@
 requests
 argparse
+
+# ---------------------------------------------------------------------------
+# Revelator v3.0 note:
+# All v3.0 features are built on the Python 3.x standard library
+# (concurrent.futures, csv, math, threading, urllib, json, re, datetime, os,
+# time). No new third-party dependencies are required beyond `requests`.
+# ---------------------------------------------------------------------------
