@@ -8,7 +8,7 @@ from datetime import datetime
 
 # -------------------------------------------------------------------------
 # Tool: Revelator
-# Version: 2.0 (The Auto-Hunter)
+# Version: 2.0 (The Auto-Hunter with Postman Export)
 # Author: R00t3dbyFa17h/NicholasMullenski
 # Verse: "Search me, God, and know my heart..." (Psalm 139:23)
 # -------------------------------------------------------------------------
@@ -29,7 +29,7 @@ def banner():
   / /_/ / __/  | | / / __/ / /   / /| | / / / / / / /_/ /
  / _, _/ /___  | |/ / /___/ /___/ ___ |/ / / /_/ / _, _/ 
 /_/ |_/_____/  |___/_____/_____/_/  |_/_/  \____/_/ |_|  
-                                            v2.0 (AUTO-HUNTER)
+                                          v2.0 (AUTO-HUNTER)
     """ + Colors.ENDC)
 
 def get_js_links(url):
@@ -48,10 +48,10 @@ def get_js_links(url):
         
         valid_js = []
         for link in links:
-            # Handle relative URLs (e.g., /assets/main.js -> https://site.com/assets/main.js)
+            # Handle relative URLs
             full_url = urljoin(url, link)
             
-            # Filter: Must be a .js file, not a tracker, not google analytics
+            # Filter: Must be a .js file, not a tracker
             if ".js" in full_url and "google" not in full_url and "facebook" not in full_url:
                 valid_js.append(full_url)
         
@@ -72,7 +72,7 @@ def fetch_js_content(url):
 
 def extract_endpoints(js_content):
     endpoints = set()
-    # Floodlight Regex: Grab anything that looks like a path inside quotes
+    # Floodlight Regex
     matches = re.findall(r"(['\"`])(.*?)\1", js_content)
     for quote, content in matches:
         if '/' in content and ' ' not in content and 4 < len(content) < 120:
@@ -96,9 +96,9 @@ def scan_secrets(content):
     return found
 
 def generate_report(results, target_domain):
-    filename = "revelator_report.html"
+    parsed_domain = urlparse(target_domain).netloc or target_domain
+    filename = f"revelator_report_{parsed_domain}.html"
     
-    # Calculate totals
     total_endpoints = sum(len(r['endpoints']) for r in results)
     total_secrets = sum(len(r['secrets']) for r in results)
     
@@ -116,7 +116,6 @@ def generate_report(results, target_domain):
             .item {{ padding: 5px 15px; border-bottom: 1px solid #21262d; font-family: monospace; }}
             .secret {{ color: #ff7b72; font-weight: bold; }}
             .endpoint {{ color: #7ee787; }}
-            .badge {{ background: #1f6feb; color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; }}
         </style>
     </head>
     <body>
@@ -129,7 +128,7 @@ def generate_report(results, target_domain):
     
     for res in results:
         if not res['endpoints'] and not res['secrets']:
-            continue # Skip empty files to keep report clean
+            continue
             
         html += f"""
         <div class="file-block">
@@ -143,12 +142,51 @@ def generate_report(results, target_domain):
     
     with open(filename, "w") as f:
         f.write(html)
-    print(Colors.GREEN + f" [+] Report Generated: {filename}" + Colors.ENDC)
+    print(Colors.GREEN + f" [+] HTML Report Generated: {filename}" + Colors.ENDC)
+
+def generate_postman_collection(all_endpoints, target_domain):
+    parsed_domain = urlparse(target_domain).netloc or target_domain
+    collection_name = f"Revelator: {parsed_domain}"
+    
+    collection = {
+        "info": {
+            "name": collection_name,
+            "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+        },
+        "item": []
+    }
+
+    for endpoint in all_endpoints:
+        # Ensure endpoint starts with a slash for clean parsing
+        clean_endpoint = endpoint if endpoint.startswith('/') else '/' + endpoint
+        full_url = urljoin(target_domain, clean_endpoint)
+        path_array = [p for p in clean_endpoint.split('/') if p]
+
+        item = {
+            "name": clean_endpoint,
+            "request": {
+                "method": "GET",
+                "url": {
+                    "raw": full_url,
+                    "host": [target_domain],
+                    "path": path_array
+                }
+            }
+        }
+        collection["item"].append(item)
+
+    filename = f"revelator_postman_{parsed_domain}.json"
+    with open(filename, "w") as f:
+        json.dump(collection, f, indent=4)
+        
+    print(Colors.GREEN + f" [+] Postman Collection Generated: {filename}" + Colors.ENDC)
 
 def main():
-    parser = argparse.ArgumentParser()
-    # v2.0 ARGUMENT: Just the domain!
-    parser.add_argument("-d", "--domain", help="Target Domain (e.g., https://tesla.com)", required=True)
+    parser = argparse.ArgumentParser(description="Revelator v2.0 - The Auto-Hunter")
+    parser.add_argument("-d", "--domain", help="Target Domain (e.g., tesla.com)", required=True)
+    # NEW ARGUMENT: Flag to trigger Postman export
+    parser.add_argument("-p", "--postman", action="store_true", help="Export found endpoints to a Postman JSON collection")
+    
     args = parser.parse_args()
     banner()
 
@@ -164,6 +202,7 @@ def main():
     print(Colors.BLUE + f" [*] Found {len(js_files)} JS files. Beginning deep scan..." + Colors.ENDC)
     
     scan_results = []
+    global_endpoints = set() # Store all unique endpoints across all files
     
     # 2. SCAN LOOP
     for js_url in js_files:
@@ -172,6 +211,11 @@ def main():
         if content:
             endpoints = extract_endpoints(content)
             secrets = scan_secrets(content)
+            
+            # Add to our global list for Postman
+            if endpoints:
+                global_endpoints.update(endpoints)
+                
             scan_results.append({
                 "url": js_url,
                 "endpoints": endpoints,
@@ -180,8 +224,15 @@ def main():
     
     print("\n" + Colors.GREEN + " [!] Scan Complete." + Colors.ENDC)
     
-    # 3. REPORT
+    # 3. REPORT GENERATION
     generate_report(scan_results, target)
+    
+    # 4. POSTMAN GENERATION (If flag is passed)
+    if args.postman:
+        if global_endpoints:
+            generate_postman_collection(global_endpoints, target)
+        else:
+            print(Colors.WARNING + " [-] No endpoints found to generate Postman collection." + Colors.ENDC)
 
 if __name__ == "__main__":
     main()
