@@ -1,0 +1,9 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Revelator scan outputs
+revelator_report_*.html
+revelator_postman_*.json
+revelator_results_*.json
+revelator_secrets_*.csv
