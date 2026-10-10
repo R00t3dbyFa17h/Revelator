@@ -33,56 +33,7 @@ Unlike standard link scrapers, Revelator **v2.0 (The Auto-Hunter)** automates th
 | **📊 Visual Reporting** | Generates a professional, dark-mode HTML report (`revelator_report.html`). |
 | **🧠 Smart Filtering** | Automatically ignores Google Analytics, Facebook trackers, and 3rd party noise. |
 
----
 
-## 🛠️ Installation
-
-### 1. Clone the Repository
-
-`git clone [https://github.com/R00t3dbyFa17h/Revelator.git](https://github.com/R00t3dbyFa17h/Revelator.git)
-cd Revelator`
-
-### 2. Install Dependencies
-
-`pip install -r requirements.txt`
-
-**(Note: Requires Python 3.x)**
-## 🚀 Usage
-
-**Revelator v2.0 is designed for speed. You only need one argument: the target domain.**
-
-### The Auto-Hunter Scan
-
-
-`python revelator.py -d example.com`
-
-**This command will:**
-
-  - Craw https://example.com
-
-  - Find all hosted JavaScript files.
-
-  - Scan each file for secrets and endpoints.
-
-  - Generate an HTML report automatically.
-
-### Arguments
-
-Argument	Description	Required
-
-`-d, --domain`	The target domain to crawl (e.g., example.com or https://example.com).
-✅ Yes
-📸 Output
-
-**1. The Terminal Output**
-
-Revelator provides a clean, color-coded CLI output identifying endpoints and secrets in real-time as it crawls.
-
-**2. The HTML Report**
-
-A dark-themed dashboard (revelator_report.html) listing all discovered "secrets" and a complete map of the API methods found.
-
----
 
 # 🔥 REVELATOR v3.0 (REVELATION)
 
